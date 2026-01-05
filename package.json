@@ -1,0 +1,32 @@
+{
+  "name": "beauty-salon-bot",
+  "version": "1.0.0",
+  "description": "AI-ассистент для записи клиентов на услуги шугаринга и аппаратных процедур",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "telegram-bot",
+    "vk-bot",
+    "beauty-salon",
+    "appointment"
+  ],
+  "author": "Svetlana Solovyeva",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "googleapis": "^126.0.1",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
+    "telegraf": "^4.12.2",
+    "vk-io": "^4.5.1"
+  },
+  "devDependencies": {
+    "jest": "^29.6.2",
+    "markdown-pdf": "^11.0.0",
+    "nodemon": "^3.0.1"
+  }
+}
