@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Настройки бота — Панель управления</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        button { margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45a049; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 4px; display: none; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .day-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .day-row label { margin: 0; width: 100px; }
+        .day-row input[type="time"] { width: 100px; }
+        .day-row input[type="checkbox"] { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+    <h1>⚙️ Настройки бота</h1>
+
+    <div class="card">
+        <h2>ВКонтакте и MAX</h2>
+        <label for="vkToken">VK Token:</label>
+        <input type="text" id="vkToken" placeholder="Вставьте токен сообщества">
+
+        <label for="vkGroupId">VK Group ID:</label>
+        <input type="text" id="vkGroupId" placeholder="ID сообщества (число)">
+
+        <label for="maxToken">MAX Bot Token:</label>
+        <input type="text" id="maxToken" placeholder="Вставьте токен из Master Bot">
+    </div>
+
+    <div class="card">
+        <h2>Расписание</h2>
+        <div id="schedule-container">
+            <!-- Сюда будут вставляться дни недели -->
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Google Sheets (опционально)</h2>
+        <label for="googleSheetId">ID таблицы:</label>
+        <input type="text" id="googleSheetId" placeholder="ID Google Таблицы">
+    </div>
+
+    <button onclick="saveSettings()">💾 Сохранить настройки</button>
+    <div id="status"></div>
+
+    <script>
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const dayNames = { monday: 'Пн', tuesday: 'Вт', wednesday: 'Ср', thursday: 'Чт', friday: 'Пт', saturday: 'Сб', sunday: 'Вс' };
+
+        async function loadSettings() {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            if (data.vkToken) document.getElementById('vkToken').value = data.vkToken;
+            if (data.vkGroupId) document.getElementById('vkGroupId').value = data.vkGroupId;
+            if (data.maxToken) document.getElementById('maxToken').value = data.maxToken;
+            if (data.googleSheetId) document.getElementById('googleSheetId').value = data.googleSheetId;
+
+            // Заполняем расписание
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            days.forEach(day => {
+                const sched = (data.schedule && data.schedule[day]) ? data.schedule[day] : { working: false, start: '09:00', end: '20:00' };
+                const row = document.createElement('div');
+                row.className = 'day-row';
+                row.innerHTML = `
+                    <label>${dayNames[day]}</label>
+                    <input type="checkbox" id="work_${day}" ${sched.working ? 'checked' : ''}>
+                    <input type="time" id="start_${day}" value="${sched.start || '09:00'}">
+                    <span>—</span>
+                    <input type="time" id="end_${day}" value="${sched.end || '20:00'}">
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function saveSettings() {
+            const schedule = {};
+            days.forEach(day => {
+                schedule[day] = {
+                    working: document.getElementById(`work_${day}`).checked,
+                    start: document.getElementById(`start_${day}`).value,
+                    end: document.getElementById(`end_${day}`).value,
+                    breaks: [{ start: '13:00', end: '14:00' }] // Пока оставляем фиксированный обед
+                };
+            });
+
+            const settings = {
+                vkToken: document.getElementById('vkToken').value,
+                vkGroupId: document.getElementById('vkGroupId').value,
+                maxToken: document.getElementById('maxToken').value,
+                googleSheetId: document.getElementById('googleSheetId').value,
+                masterName: "Светлана Соловьева",
+                masterPhone: "+7XXXXXXXXXX",
+                schedule: schedule
+            };
+
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await res.json();
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'block';
+            statusDiv.className = result.success ? 'success' : 'error';
+            statusDiv.textContent = result.success ? '✅ Настройки сохранены!' : '❌ Ошибка сохранения';
+            setTimeout(() => statusDiv.style.display = 'none', 3000);
+        }
+
+        loadSettings();
+    </script>
+</body>
+</html>

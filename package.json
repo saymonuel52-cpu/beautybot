@@ -17,7 +17,10 @@
   "author": "Svetlana Solovyeva",
   "license": "MIT",
   "dependencies": {
+    "@maxhub/max-bot-api": "^1.1.0",
+    "body-parser": "^2.4.0",
     "dotenv": "^16.3.1",
+    "express": "^5.3.0",
     "googleapis": "^126.0.1",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",

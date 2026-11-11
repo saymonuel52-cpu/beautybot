@@ -1,0 +1,84 @@
+﻿require('dotenv').config();
+const { loadConfig } = require('./config/loader');
+const VKBot = require('./bot/vk');
+const MaxBot = require('./bot/max');
+const Scheduler = require('./services/scheduler');
+const NotificationService = require('./services/notifications');
+const GoogleSheetsService = require('./services/googleSheets');
+
+class BeautySalonBot {
+  constructor() {
+    this.config = loadConfig();
+    this.scheduler = new Scheduler();
+    this.notificationService = new NotificationService();
+    this.googleSheetsService = null;
+    this.vkBot = null;
+    this.maxBot = null;
+
+    this.setupGoogleSheets();
+    this.setupBots();
+  }
+
+  setupGoogleSheets() {
+    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+      console.warn('[Google] Ключи не заданы в .env — пропускаем');
+      return;
+    }
+    try {
+      this.googleSheetsService = new GoogleSheetsService({
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      });
+      console.log('[Google] Сервис инициализирован');
+    } catch (err) {
+      console.error('[Google] Ошибка:', err.message);
+    }
+  }
+
+  setupBots() {
+    const cfg = this.config;
+
+    if (cfg.vkToken && cfg.vkGroupId && !cfg.vkToken.startsWith('your_')) {
+      this.vkBot = new VKBot(cfg.vkToken, cfg.vkGroupId, this.scheduler, this.googleSheetsService);
+      console.log('[VK] Бот инициализирован');
+    } else {
+      console.warn('[VK] Токен или ID не заданы в config.json');
+    }
+
+    if (cfg.maxToken && !cfg.maxToken.startsWith('your_')) {
+      this.maxBot = new MaxBot(cfg.maxToken, this.scheduler, this.googleSheetsService);
+      console.log('[MAX] Бот инициализирован');
+    } else {
+      console.warn('[MAX] Токен не задан в config.json');
+    }
+  }
+
+  async start() {
+    console.log('Запуск Beauty Salon Bot...');
+    if (this.vkBot) {
+      try { await this.vkBot.start(); } catch (_) {}
+    }
+    if (this.maxBot) {
+      try { await this.maxBot.start(); } catch (_) {}
+    }
+    console.log('Beauty Salon Bot запущен');
+  }
+
+  stop() {
+    if (this.vkBot) { try { this.vkBot.stop(); } catch (_) {} }
+    if (this.maxBot) { try { this.maxBot.stop(); } catch (_) {} }
+  }
+}
+
+const app = new BeautySalonBot();
+global.__beautyBotApp = app;
+
+// Веб-панель (запускается на PORT, по умолчанию 3000)
+try { require('./web/server'); } catch (err) { console.error('[Web] Ошибка:', err.message); }
+
+app.start().catch(err => console.error('Fatal:', err));
+
+process.on('SIGINT', () => { app.stop(); process.exit(0); });
+process.on('SIGTERM', () => { app.stop(); process.exit(0); });
+
+module.exports = BeautySalonBot;

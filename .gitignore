@@ -1,0 +1,26 @@
+﻿# Зависимости
+node_modules/
+package-lock.json
+
+# Секреты и локальный конфиг
+.env
+config.json
+*.bak
+*.bak2
+*.bak3
+
+# Архивы и логи
+*.zip
+*.log
+run-out.log
+run-err.log
+web-out.log
+web-err.log
+
+# Тестовые скрипты (не нужны в репо)
+demo-step12.js
+test-overlap.js
+
+# ОС
+.DS_Store
+Thumbs.db
